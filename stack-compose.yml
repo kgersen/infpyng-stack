@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  influxdb:
+    image: influxdb:latest
+    container_name: infpyng_influxdb
+    environment:
+      - INFLUXDB_DB=infpyng
+    volumes:
+      - ./data/influxdb:/var/lib/influxdb
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:7.0.1
+    container_name: infpyng_grafana
+    depends_on:
+      - influxdb
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    env_file:
+      - ./grafana/config.monitoring
+    ports:
+       - 3001:3000
+    restart: unless-stopped
+  
+  infpyng:
+    build:
+      context: .
+      dockerfile: ../Dockerfile
+    image: oijkn/infpyng:latest
+    container_name: infpyng_infpyng
+    depends_on:
+      - influxdb
+    volumes:
+      - ./config.toml:/app/infpyng/config/config.toml
+      - ./hosts.toml:/app/infpyng/config/hosts.toml
+      - ./data/infpyng.log:/var/log/infpyng.log
+    restart: unless-stopped
